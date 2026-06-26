@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USA Weather</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-950 text-white min-h-screen">
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-cloud-sun text-4xl text-blue-400"></i>
+                <h1 class="text-4xl font-bold">USA Weather</h1>
+            </div>
+            <div class="flex-1 max-w-md ml-8 relative">
+                <div class="flex gap-2">
+                    <input id="searchInput" type="text" placeholder="City, State or ZIP" 
+                           class="flex-1 bg-gray-800 border border-gray-700 focus:border-blue-500 rounded-xl px-4 py-2.5 text-base outline-none"
+                           onkeypress="if(event.key === 'Enter') searchLocation()"
+                           oninput="handleSearchInput(this.value)"
+                           autocomplete="off">
+                    <button onclick="searchLocation()" 
+                            class="bg-blue-600 hover:bg-blue-700 px-4 py-2.5 rounded-xl font-medium">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+                </div>
+                <div id="autocompleteDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-xl z-10 max-h-80 overflow-y-auto"></div>
+            </div>
+            <button onclick="toggleMusic()" id="musicBtn" class="ml-4 bg-gray-800 hover:bg-gray-700 px-4 py-2.5 rounded-xl flex items-center justify-center transition" title="Play Jazz">
+                <i id="musicIcon" class="fa-solid fa-music text-blue-300"></i>
+                <span id="musicWaves" class="hidden ml-2 flex gap-0.5 items-end h-4">
+                    <span class="w-0.5 bg-blue-300 rounded-full animate-wave" style="animation-delay: 0s; height: 60%;"></span>
+                    <span class="w-0.5 bg-blue-300 rounded-full animate-wave" style="animation-delay: 0.1s; height: 100%;"></span>
+                    <span class="w-0.5 bg-blue-300 rounded-full animate-wave" style="animation-delay: 0.2s; height: 80%;"></span>
+                    <span class="w-0.5 bg-blue-300 rounded-full animate-wave" style="animation-delay: 0.3s; height: 40%;"></span>
+                </span>
+            </button>
+            <audio id="jazzPlayer" loop crossorigin="anonymous">
+                <source src="https://knkx-live-a.edge.audiocdn.com/6285_128k" type="audio/mpeg">
+            </audio>
+        </div>
+
+        <div id="loading" class="hidden flex flex-col items-center py-20">
+            <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+            <p class="text-gray-400">Fetching weather...</p>
+        </div>
+
+        <div id="error" class="hidden bg-red-900/50 border border-red-700 rounded-3xl p-8 text-center">
+            <p id="errorMessage" class="text-xl"></p>
+        </div>
+
+        <div id="mainContent" class="hidden">
+            <!-- Current Weather -->
+            <div class="weather-card rounded-3xl p-8 mb-8 shadow-2xl">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 id="locationName" class="text-3xl font-semibold"></h2>
+                        <p id="currentTime" class="text-blue-200 mt-1"></p>
+                        <div class="flex items-end gap-6 mt-6">
+                            <div id="currentTemp" class="text-8xl font-light leading-none"></div>
+                            <div>
+                                <div id="currentCondition" class="text-2xl capitalize"></div>
+                                <div id="currentHighLow" class="text-blue-200"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div id="currentIcon" class="text-9xl"></div>
+                        <div id="feelsLike" class="text-blue-200 mt-2"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-x-8 gap-y-4 mt-10 pt-8 border-t border-white/20">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-droplet text-blue-300 text-xl"></i>
+                        <div><div class="text-sm text-blue-200">Humidity</div><div id="humidity" class="text-2xl font-medium"></div></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i id="windIcon" class="fa-solid fa-wind text-blue-300 text-xl"></i>
+                        <div>
+                            <div class="text-sm text-blue-200">Wind</div>
+                            <div id="wind" class="text-2xl font-medium"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-umbrella text-blue-300 text-xl"></i>
+                        <div><div class="text-sm text-blue-200">Precipitation</div><div id="precip" class="text-2xl font-medium"></div></div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-gauge-high text-blue-300 text-xl"></i>
+                        <div>
+                            <div class="text-sm text-blue-200">Gusts</div>
+                            <div id="gusts" class="text-2xl font-medium"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hourly Forecast -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-clock"></i>
+                    24-Hour Forecast
+                </h3>
+                <div id="hourlyContainer" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide"></div>
+            </div>
+
+            <!-- 5-Day Forecast -->
+            <div>
+                <h3 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    5-Day Forecast
+                </h3>
+                <div id="forecastContainer" class="grid grid-cols-2 md:grid-cols-5 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Forecast Detail Modal -->
+        <div id="detailModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div class="bg-gray-900 rounded-3xl p-8 max-w-md w-full mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 id="modalDay" class="text-2xl font-semibold"></h3>
+                    <button onclick="closeModal()" class="text-3xl leading-none hover:text-gray-400">×</button>
+                </div>
+                <div id="modalContent" class="space-y-6"></div>
+                <button onclick="closeModal()" 
+                        class="mt-8 w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-2xl font-medium">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
